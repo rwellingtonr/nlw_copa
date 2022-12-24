@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pool {
+  id      String  @id @default(cuid())
+  title   String
+  code    String  @unique
+  ownerId String?
+
+  participants Participant[]
+  owner        User?         @relation(fields: [ownerId], references: [id])
+  createdAt    DateTime      @default(now())
+
+  @@map("pools")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  participatedAt Participant[]
+  ownPools       Pool[]
+
+  @@map("users")
+}
+
+model Participant {
+  id     String @id @default(cuid())
+  userId String
+  poolId String
+
+  guesses Guess[]
+  user    User    @relation(fields: [userId], references: [id])
+  pool    Pool    @relation(fields: [poolId], references: [id])
+
+  @@unique([userId, poolId])
+  @@map("participants")
+}
+
+model Game {
+  id                    String   @id @default(cuid())
+  date                  DateTime
+  firstTeamCountryCode  String   @db.VarChar(2)
+  secondTeamCountryCode String   @db.VarChar(2)
+  guesses               Guess[]
+
+  @@map("games")
+}
+
+model Guess {
+  id               String   @id @default(cuid())
+  fistTeamPoints   Int
+  secondTeamPoints Int
+  createdAt        DateTime @default(now())
+  gameId           String
+  participantId    String
+
+  participant Participant @relation(fields: [participantId], references: [id])
+  game        Game        @relation(fields: [gameId], references: [id])
+
+  @@map("guesses")
+}
